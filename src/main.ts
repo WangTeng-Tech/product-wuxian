@@ -11,6 +11,9 @@ import '@/styles/index.scss'
 import AOS from 'aos'
 import 'aos/dist/aos.css'
 
+// Vercel Speed Insights
+import { injectSpeedInsights } from '@vercel/speed-insights'
+
 const app = createApp(App)
 
 app.use(createPinia())
@@ -23,5 +26,8 @@ AOS.init({
   once: true,
   offset: 50
 })
+
+// Initialize Vercel Speed Insights (client-side only)
+injectSpeedInsights()
 
 app.mount('#app')
