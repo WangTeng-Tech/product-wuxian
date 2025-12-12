@@ -257,7 +257,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, onMounted, watch, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Refresh, Download, SwitchButton } from '@element-plus/icons-vue'
 import { supabase } from '@/utils/supabase'
