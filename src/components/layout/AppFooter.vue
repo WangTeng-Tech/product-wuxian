@@ -10,7 +10,7 @@ import { ChatDotRound, Notebook, VideoPlay, Promotion } from '@element-plus/icon
           <h3 class="footer-logo">网腾无限</h3>
           <p class="footer-desc">
             全平台物联网多级分销系统解决方案提供商。<br>
-            连接万物，赋能商业。
+            无限科技、无限收益。
           </p>
           <div class="social-icons">
             <el-tooltip content="微信:staff9525" placement="top">

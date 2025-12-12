@@ -58,7 +58,7 @@
             <el-card class="stat-card">
               <div class="stat-content">
                 <div class="stat-label">总咨询数</div>
-                <div class="stat-value">{{ inquiries.length }}</div>
+                <div class="stat-value">{{ total }}</div>
               </div>
             </el-card>
             <el-card class="stat-card">
@@ -78,7 +78,7 @@
           <!-- 数据表格 -->
           <el-card class="table-card">
             <el-table 
-              :data="filteredInquiries" 
+              :data="inquiries" 
               v-loading="loading"
               stripe
               border
@@ -125,6 +125,19 @@
                 </template>
               </el-table-column>
             </el-table>
+
+            <!-- 分页控件 -->
+            <div class="pagination-container">
+              <el-pagination
+                v-model:current-page="currentPage"
+                v-model:page-size="pageSize"
+                :page-sizes="[10, 20, 50, 100]"
+                layout="total, sizes, prev, pager, next, jumper"
+                :total="total"
+                @size-change="handleSizeChange"
+                @current-change="handleCurrentChange"
+              />
+            </div>
           </el-card>
         </el-tab-pane>
 
@@ -134,31 +147,59 @@
             <!-- 左侧：会话列表 -->
             <div class="conversation-list">
               <div class="list-header">
-                <h3>会话列表</h3>
-                <el-button circle size="small" @click="fetchConversations">
-                  <el-icon><Refresh /></el-icon>
-                </el-button>
+                <h3>会话列表 ({{ convTotal }})</h3>
+                <div class="header-actions">
+                  <el-button circle size="small" @click="fetchConversations">
+                    <el-icon><Refresh /></el-icon>
+                  </el-button>
+                  <el-popconfirm
+                    title="确定要清理所有空会话吗？"
+                    confirm-button-text="确定"
+                    cancel-button-text="取消"
+                    @confirm="cleanupEmptyConversations"
+                  >
+                    <template #reference>
+                      <el-button size="small" type="warning" :loading="cleanupLoading">
+                        清理空会话
+                      </el-button>
+                    </template>
+                  </el-popconfirm>
+                </div>
               </div>
               
-              <div v-if="conversations.length === 0" class="empty-list">
-                暂无会话
+              <div class="conv-list-content">
+                <div v-if="conversations.length === 0" class="empty-list">
+                  暂无会话
+                </div>
+
+                <div 
+                  v-for="conv in conversations" 
+                  :key="conv.id"
+                  class="conversation-item"
+                  :class="{ active: currentConversation?.id === conv.id }"
+                  @click="selectConversation(conv)"
+                >
+                  <div class="conv-avatar">
+                    <el-avatar :size="40">{{ conv.visitor_name?.slice(-2) || '访客' }}</el-avatar>
+                    <div class="status-dot" :class="conv.status"></div>
+                  </div>
+                  <div class="conv-info">
+                    <div class="conv-name">{{ conv.visitor_name || '匿名访客' }}</div>
+                    <div class="conv-time">{{ formatTime(conv.last_message_at) }}</div>
+                  </div>
+                </div>
               </div>
 
-              <div 
-                v-for="conv in conversations" 
-                :key="conv.id"
-                class="conversation-item"
-                :class="{ active: currentConversation?.id === conv.id }"
-                @click="selectConversation(conv)"
-              >
-                <div class="conv-avatar">
-                  <el-avatar :size="40">{{ conv.visitor_name?.slice(-2) || '访客' }}</el-avatar>
-                  <div class="status-dot" :class="conv.status"></div>
-                </div>
-                <div class="conv-info">
-                  <div class="conv-name">{{ conv.visitor_name || '匿名访客' }}</div>
-                  <div class="conv-time">{{ formatTime(conv.last_message_at) }}</div>
-                </div>
+              <!-- 会话列表分页 -->
+              <div v-if="convTotal > convPageSize" class="conv-pagination">
+                <el-pagination
+                  v-model:current-page="convPage"
+                  :page-size="convPageSize"
+                  layout="prev, pager, next"
+                  :total="convTotal"
+                  small
+                  @current-change="handleConvPageChange"
+                />
               </div>
             </div>
 
@@ -177,6 +218,9 @@
                 </div>
 
                 <div class="chat-messages-area" ref="chatAreaRef">
+                  <div v-if="currentMessages.length === 0" class="empty-messages">
+                    <p>暂无消息记录</p>
+                  </div>
                   <div 
                     v-for="(msg, index) in currentMessages" 
                     :key="msg.id || index"
@@ -227,27 +271,11 @@ const activeTab = ref('inquiries')
 
 // --- 商务咨询逻辑 ---
 const inquiries = ref<any[]>([])
-
-const todayCount = computed(() => {
-  const today = new Date().toDateString()
-  return inquiries.value.filter(item => 
-    new Date(item.created_at).toDateString() === today
-  ).length
-})
-
-const weekCount = computed(() => {
-  const weekAgo = new Date()
-  weekAgo.setDate(weekAgo.getDate() - 7)
-  return inquiries.value.filter(item => 
-    new Date(item.created_at) >= weekAgo
-  ).length
-})
-
-const filteredInquiries = computed(() => {
-  return inquiries.value.sort((a, b) => 
-    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  )
-})
+const currentPage = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
+const todayCount = ref(0)
+const weekCount = ref(0)
 
 // 登录
 const handleLogin = async () => {
@@ -272,6 +300,7 @@ const handleLogin = async () => {
 
     isAuthenticated.value = true
     ElMessage.success('登录成功')
+    fetchStats()
     fetchInquiries()
     fetchConversations()
   } catch (error: any) {
@@ -295,14 +324,46 @@ const logout = async () => {
   }
 }
 
+// 获取统计数据 (独立获取，不受分页影响)
+const fetchStats = async () => {
+  if (!supabase) return
+  
+  // 获取总数
+  const { count } = await supabase.from('inquiries').select('*', { count: 'exact', head: true })
+  total.value = count || 0
+
+  // 获取今日新增
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const { count: todayC } = await supabase
+    .from('inquiries')
+    .select('*', { count: 'exact', head: true })
+    .gte('created_at', today.toISOString())
+  todayCount.value = todayC || 0
+
+  // 获取本周新增
+  const weekAgo = new Date()
+  weekAgo.setDate(weekAgo.getDate() - 7)
+  const { count: weekC } = await supabase
+    .from('inquiries')
+    .select('*', { count: 'exact', head: true })
+    .gte('created_at', weekAgo.toISOString())
+  weekCount.value = weekC || 0
+}
+
 const fetchInquiries = async () => {
   loading.value = true
   try {
     if (!supabase) return
+    
+    const from = (currentPage.value - 1) * pageSize.value
+    const to = from + pageSize.value - 1
+
     const { data, error } = await supabase
       .from('inquiries')
       .select('*')
       .order('created_at', { ascending: false })
+      .range(from, to)
 
     if (error) throw error
     inquiries.value = data || []
@@ -313,14 +374,31 @@ const fetchInquiries = async () => {
   }
 }
 
+const handleSizeChange = (val: number) => {
+  pageSize.value = val
+  fetchInquiries()
+}
+
+const handleCurrentChange = (val: number) => {
+  currentPage.value = val
+  fetchInquiries()
+}
+
 const refreshData = () => {
+  fetchStats()
   fetchInquiries()
   ElMessage.success('数据已刷新')
 }
 
-const exportToCSV = () => {
+const exportToCSV = async () => {
+  // 导出时获取所有数据
+  if (!supabase) return
+  const { data } = await supabase.from('inquiries').select('*').order('created_at', { ascending: false })
+  
+  if (!data) return
+
   const headers = ['姓名', '公司', '手机号', '邮箱', '咨询类型', '详细需求', '提交时间']
-  const rows = inquiries.value.map(item => [
+  const rows = data.map(item => [
     item.name, item.company, item.mobile, item.email || '',
     getTypeLabel(item.type), item.message, formatDate(item.created_at)
   ])
@@ -344,6 +422,10 @@ const currentConversation = ref<any>(null)
 const replyText = ref('')
 const sending = ref(false)
 const chatAreaRef = ref<HTMLElement | null>(null)
+const convPage = ref(1)
+const convPageSize = ref(20)
+const convTotal = ref(0)
+const cleanupLoading = ref(false)
 
 // 复用 composable，但这里主要用于单个会话的操作
 const { 
@@ -356,22 +438,99 @@ const {
 const fetchConversations = async () => {
   if (!supabase) return
   try {
+    // 获取总数
+    const { count } = await supabase
+      .from('customer_conversations')
+      .select('*', { count: 'exact', head: true })
+    convTotal.value = count || 0
+
+    // 获取分页数据
+    const from = (convPage.value - 1) * convPageSize.value
+    const to = from + convPageSize.value - 1
+
     const { data, error } = await supabase
       .from('customer_conversations')
       .select('*')
       .order('last_message_at', { ascending: false })
+      .range(from, to)
     
     if (error) throw error
     conversations.value = data || []
   } catch (error) {
     console.error('Error fetching conversations:', error)
+    ElMessage.error('获取会话列表失败')
+  }
+}
+
+const handleConvPageChange = (val: number) => {
+  convPage.value = val
+  fetchConversations()
+}
+
+// 清理空会话
+const cleanupEmptyConversations = async () => {
+  if (!supabase) return
+  
+  cleanupLoading.value = true
+  try {
+    // 1. 获取所有会话ID
+    const { data: allConvs, error: fetchError } = await supabase
+      .from('customer_conversations')
+      .select('id')
+    
+    if (fetchError) throw fetchError
+    if (!allConvs || allConvs.length === 0) {
+      ElMessage.info('没有会话需要清理')
+      return
+    }
+
+    // 2. 检查每个会话是否有消息
+    const emptyConvIds: number[] = []
+    for (const conv of allConvs) {
+      const { count } = await supabase
+        .from('customer_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('conversation_id', conv.id)
+      
+      if (count === 0) {
+        emptyConvIds.push(conv.id)
+      }
+    }
+
+    if (emptyConvIds.length === 0) {
+      ElMessage.success('没有空会话，无需清理')
+      return
+    }
+
+    // 3. 删除空会话
+    const { error: deleteError } = await supabase
+      .from('customer_conversations')
+      .delete()
+      .in('id', emptyConvIds)
+    
+    if (deleteError) throw deleteError
+
+    ElMessage.success(`成功清理 ${emptyConvIds.length} 个空会话`)
+    
+    // 4. 刷新列表
+    convPage.value = 1
+    await fetchConversations()
+    
+    // 5. 如果当前选中的会话被删除了，清空选择
+    if (currentConversation.value && emptyConvIds.includes(currentConversation.value.id)) {
+      currentConversation.value = null
+    }
+  } catch (error: any) {
+    console.error('Error cleaning up conversations:', error)
+    ElMessage.error('清理失败: ' + error.message)
+  } finally {
+    cleanupLoading.value = false
   }
 }
 
 // 选择会话
 const selectConversation = async (conv: any) => {
   currentConversation.value = conv
-  // 加载该会话的消息
   await loadConversation(conv.id)
   scrollToBottom()
 }
@@ -412,6 +571,7 @@ onMounted(async () => {
   const { data: { session } } = await supabase.auth.getSession()
   if (session) {
     isAuthenticated.value = true
+    fetchStats()
     fetchInquiries()
     fetchConversations()
     
@@ -524,6 +684,12 @@ const getStatusType = (status: string) => {
   .message-content { white-space: pre-wrap; line-height: 1.6; }
 }
 
+.pagination-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
 /* 客服面板样式 */
 .chat-dashboard {
   display: flex;
@@ -548,6 +714,17 @@ const getStatusType = (status: string) => {
     justify-content: space-between;
     align-items: center;
     h3 { margin: 0; font-size: 16px; }
+    
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+  }
+
+  .conv-list-content {
+    flex: 1;
+    overflow-y: auto;
   }
 
   .empty-list {
@@ -590,6 +767,13 @@ const getStatusType = (status: string) => {
       .conv-time { font-size: 12px; color: #909399; }
     }
   }
+
+  .conv-pagination {
+    padding: 10px;
+    border-top: 1px solid #ebeef5;
+    display: flex;
+    justify-content: center;
+  }
 }
 
 .chat-panel {
@@ -628,6 +812,12 @@ const getStatusType = (status: string) => {
     display: flex;
     flex-direction: column;
     gap: 15px;
+
+    .empty-messages {
+      text-align: center;
+      color: #909399;
+      margin-top: 20px;
+    }
   }
 
   .admin-message-item {

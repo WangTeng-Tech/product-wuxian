@@ -109,6 +109,7 @@ export function useCustomerService(initialConversationId?: number) {
     // 加载历史消息
     const loadMessages = async (conversationId: number) => {
         if (!supabase) return
+
         const { data, error } = await supabase
             .from('customer_messages')
             .select('*')
@@ -119,6 +120,7 @@ export function useCustomerService(initialConversationId?: number) {
             console.error('Error loading messages:', error)
             return
         }
+
         messages.value = data || []
     }
 

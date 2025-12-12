@@ -3,7 +3,7 @@ const BACKENDS = [
     {
         name: "vercel",
         url: "https://vercel.wuxian.xyz",
-        weight: 3,  // 最快 (87.1ms),适中权重避免过度依赖
+        weight: 5,  // 最快 (87.1ms),适中权重避免过度依赖
         region: "CN"
     },
     {
@@ -15,14 +15,14 @@ const BACKENDS = [
     {
         name: "render",
         url: "https://render.wuxian.xyz",
-        weight: 2,  // 很快 (173.2ms),优质备选
+        weight: 3,  // 很快 (173.2ms),优质备选
         region: "EU"
     },
     {
         name: "qcloud",
         url: "https://qcloud.wuxian.xyz",
-        weight: 1,  // 最慢 (264ms),仅移动线路有优势
-        region: "GLOBAL"
+        weight: 3,  // EdgeOne 海外表现优异 (日本71%流量), 264ms 为国内测速
+        region: "APAC"  // 亚太地区优势
     }
 ];
 
@@ -32,27 +32,37 @@ const USE_RACE = false; // 禁用竞速模式,节省带宽 (从 true 改为 fals
 const USE_GEO_ROUTING = true; // 开启地理位置智能路由
 const CACHE_STATIC = true; // 缓存静态资源
 const CACHE_HTML = true; // 缓存 HTML 页面 (新增)
+const HTML_CACHE_TTL = 600; // HTML 缓存时间增加到 10 分钟
 
-// 地理位置路由映射 (基于 91 节点测速数据优化)
+// 地理位置路由映射 (基于 Cloudflare + EdgeOne 流量数据 2025-12-12 优化)
+// Cloudflare 流量排名: US(27.6%) > JP(12.6%) > KR(10.8%) > SG(8.9%) > CN(8.1%)
+// EdgeOne 流量排名: JP(71%) > AU(10%) > IT(6%) > US(6%) > IN(2%)
 const GEO_ROUTING = {
-    // 亚太地区 - 全部 Vercel (测试证明最快)
-    'CN': 'vercel',      // 中国大陆 → Vercel (87.1ms,电信/联通/多线最快)
-    'HK': 'vercel',      // 香港 → Vercel
-    'TW': 'vercel',      // 台湾 → Vercel
-    'SG': 'vercel',      // 新加坡 → Vercel
-    'JP': 'vercel',      // 日本 → Vercel
-    'KR': 'vercel',      // 韩国 → Vercel
+    // 中国大陆 - Vercel (国内测速最快 87.1ms)
+    'CN': 'vercel',      // 中国 (8.1%) → Vercel
 
-    // 美洲地区 - Vercel
-    'US': 'vercel',      // 美国 → Vercel
+    // 亚太地区 - QCloud/EdgeOne (EdgeOne 日本流量 4.56GB, 占71%)
+    'JP': 'qcloud',      // 日本 (12.6%+71%) → QCloud/EdgeOne ★核心
+    'KR': 'qcloud',      // 韩国 (10.8%) → QCloud
+    'SG': 'qcloud',      // 新加坡 (8.9%) → QCloud
+    'HK': 'qcloud',      // 香港 → QCloud (腾讯云香港节点)
+    'TW': 'qcloud',      // 台湾 → QCloud
+    'AU': 'netlify',      // 澳大利亚 (EdgeOne 10%) → Netlify
+    'IN': 'netlify',      // 印度 (EdgeOne 2%) → Netlify
+
+    // 美洲地区 - Vercel (最快)
+    'US': 'vercel',      // 美国 (27.6%) → Vercel
     'CA': 'vercel',      // 加拿大 → Vercel
-    'BR': 'vercel',      // 巴西 → Vercel
+    'BR': 'render',     // 巴西 → Render (全球分布)
+    'MX': 'render',      // 墨西哥 → Render
 
-    // 欧洲地区 - Netlify (地理位置更近)
+    // 欧洲地区 - Netlify/Render 分流
     'GB': 'netlify',     // 英国 → Netlify
     'DE': 'netlify',     // 德国 → Netlify
     'FR': 'netlify',     // 法国 → Netlify
-    'NL': 'netlify',     // 荷兰 → Netlify
+    'IT': 'render',      // 意大利 (EdgeOne 6%) → Render
+    'NL': 'render',      // 荷兰 → Render
+    'RU': 'render',      // 俄罗斯 → Render
 
     // 默认 - Vercel (全球最优)
     'default': 'vercel'
@@ -241,7 +251,8 @@ async function handleWithCache(request) {
 
     // 使用 Cloudflare Cache API
     const cache = caches.default;
-    const cacheKey = new Request(url.toString(), request);
+    // 修复: 只使用 URL 作为缓存键,忽略 headers (提高缓存命中率)
+    const cacheKey = new Request(url.toString(), { method: 'GET' });
 
     let response = await cache.match(cacheKey);
     if (response) {
@@ -267,7 +278,7 @@ async function handleWithCache(request) {
         if (isStatic) {
             headers.set('Cache-Control', 'public, max-age=31536000, immutable');
         } else if (isHTML) {
-            headers.set('Cache-Control', 'public, max-age=300, s-maxage=300');  // HTML 缓存 5 分钟
+            headers.set('Cache-Control', `public, max-age=${HTML_CACHE_TTL}, s-maxage=${HTML_CACHE_TTL}`);  // HTML 缓存 10 分钟
         }
 
         headers.set('X-Cache-Status', 'MISS');
