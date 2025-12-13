@@ -9,14 +9,14 @@ const BACKENDS = [
     {
         name: "netlify",
         url: "https://netlify.wuxian.xyz",
-        weight: 2,  // 良好 (208ms),地理分布广
-        region: "GLOBAL"
+        weight: 2,  // 资源较少，分配给非核心区域
+        region: "Asia/Africa/LatAm"
     },
     {
         name: "render",
         url: "https://render.wuxian.xyz",
         weight: 3,  // 很快 (173.2ms),优质备选
-        region: "EU"
+        region: "GLOBAL"
     },
     {
         name: "qcloud",
@@ -41,28 +41,46 @@ const GEO_ROUTING = {
     // 中国大陆 - Vercel (国内测速最快 87.1ms)
     'CN': 'vercel',      // 中国 (8.1%) → Vercel
 
-    // 亚太地区 - QCloud/EdgeOne (EdgeOne 日本流量 4.56GB, 占71%)
-    'JP': 'qcloud',      // 日本 (12.6%+71%) → QCloud/EdgeOne ★核心
+    // 亚太地区 (高端) - QCloud/EdgeOne
+    'JP': 'qcloud',      // 日本 (12.6%+71%) → QCloud
     'KR': 'qcloud',      // 韩国 (10.8%) → QCloud
     'SG': 'qcloud',      // 新加坡 (8.9%) → QCloud
-    'HK': 'qcloud',      // 香港 → QCloud (腾讯云香港节点)
+    'HK': 'qcloud',      // 香港 → QCloud
     'TW': 'qcloud',      // 台湾 → QCloud
-    'AU': 'netlify',      // 澳大利亚 (EdgeOne 10%) → Netlify
-    'IN': 'netlify',      // 印度 (EdgeOne 2%) → Netlify
+    'AU': 'render',      // 澳大利亚 (EdgeOne 10%) → Render
 
-    // 美洲地区 - Vercel (最快)
+    // 亚洲 (其他) - Netlify
+    'IN': 'netlify',     // 印度
+    'ID': 'netlify',     // 印尼
+    'PH': 'netlify',     // 菲律宾
+    'TH': 'netlify',     // 泰国
+    'VN': 'netlify',     // 越南
+    'MY': 'netlify',     // 马来西亚
+
+    // 非洲 - Netlify
+    'ZA': 'netlify',     // 南非
+    'EG': 'netlify',     // 埃及
+    'NG': 'netlify',     // 尼日利亚
+
+    // 拉丁美洲 - Netlify
+    'BR': 'netlify',     // 巴西
+    'MX': 'netlify',     // 墨西哥
+    'AR': 'netlify',     // 阿根廷
+    'CL': 'netlify',     // 智利
+    'CO': 'netlify',     // 哥伦比亚
+    'PE': 'netlify',     // 秘鲁
+
+    // 美洲地区 (北美) - Vercel
     'US': 'vercel',      // 美国 (27.6%) → Vercel
     'CA': 'vercel',      // 加拿大 → Vercel
-    'BR': 'render',     // 巴西 → Render (全球分布)
-    'MX': 'render',      // 墨西哥 → Render
 
-    // 欧洲地区 - Netlify/Render 分流
-    'GB': 'netlify',     // 英国 → Netlify
-    'DE': 'netlify',     // 德国 → Netlify
-    'FR': 'netlify',     // 法国 → Netlify
-    'IT': 'render',      // 意大利 (EdgeOne 6%) → Render
-    'NL': 'render',      // 荷兰 → Render
-    'RU': 'render',      // 俄罗斯 → Render
+    // 欧洲地区 - Render/Netlify
+    'GB': 'render',     // 英国
+    'DE': 'render',     // 德国
+    'FR': 'render',     // 法国
+    'IT': 'render',     // 意大利
+    'NL': 'render',     // 荷兰
+    'RU': 'netlify',    // 俄罗斯
 
     // 默认 - Vercel (全球最优)
     'default': 'vercel'
