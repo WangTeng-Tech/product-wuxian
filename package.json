@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vue-tsc && vite build",
     "build:worker": "echo 'Worker only, skipping static build'",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "cross-env WRANGLER_SEND_METRICS=false wrangler deploy"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
@@ -25,11 +26,13 @@
     "@types/node": "^20.10.4",
     "@types/nprogress": "^0.2.3",
     "@vitejs/plugin-vue": "^4.5.2",
+    "cross-env": "^10.1.0",
     "sass": "^1.69.5",
     "typescript": "^5.3.3",
     "unplugin-auto-import": "^0.17.2",
     "unplugin-vue-components": "^0.26.0",
     "vite": "^5.0.10",
-    "vue-tsc": "^2.1.0"
+    "vue-tsc": "^2.1.0",
+    "wrangler": "^4.54.0"
   }
 }
