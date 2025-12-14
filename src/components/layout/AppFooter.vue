@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { ChatDotRound, Notebook, VideoPlay, Promotion } from '@element-plus/icons-vue'
+import { ref } from 'vue'
+import { ChatDotRound, Notebook, VideoPlay, Promotion, Download } from '@element-plus/icons-vue'
+import AppDownloadModal from '@/components/common/AppDownloadModal.vue'
+
+const showDownloadModal = ref(false)
 </script>
 
 <template>
@@ -13,17 +17,44 @@ import { ChatDotRound, Notebook, VideoPlay, Promotion } from '@element-plus/icon
             无限科技、无限收益。
           </p>
           <div class="social-icons">
-            <el-tooltip content="微信:staff9525" placement="top">
-              <div class="icon-btn"><el-icon><ChatDotRound /></el-icon></div>
-            </el-tooltip>
-            <el-tooltip content="知乎:nexble" placement="top">
-              <div class="icon-btn"><el-icon><Notebook /></el-icon></div>
-            </el-tooltip>
-            <el-tooltip content="抖音:hanzoWT" placement="top">
+            <el-popover placement="top" :width="150" trigger="hover">
+              <template #reference>
+                <div class="icon-btn"><el-icon><ChatDotRound /></el-icon></div>
+              </template>
+              <div class="qr-code-box">
+                <img src="/weixin.png" alt="微信" />
+                <p>微信联系</p>
+              </div>
+            </el-popover>
+
+            <el-popover placement="top" :width="150" trigger="hover">
+              <template #reference>
+                <div class="icon-btn"><el-icon><Notebook /></el-icon></div>
+              </template>
+              <div class="qr-code-box">
+                <img src="/zhihu.png" alt="知乎" />
+                <p>知乎专栏</p>
+              </div>
+            </el-popover>
+
+            <el-tooltip content="抖音:wuxian.xyz" placement="top">
               <div class="icon-btn"><el-icon><VideoPlay /></el-icon></div>
             </el-tooltip>
-            <el-tooltip content="钉钉:i1000100" placement="top">
-              <div class="icon-btn"><el-icon><Promotion /></el-icon></div>
+            
+            <el-popover placement="top" :width="150" trigger="hover">
+              <template #reference>
+                <div class="icon-btn"><el-icon><Promotion /></el-icon></div>
+              </template>
+              <div class="qr-code-box">
+                <img src="/dingtalk.png" alt="钉钉联系" />
+                <p>钉钉联系</p>
+              </div>
+            </el-popover>
+
+            <el-tooltip content="APP下载" placement="top">
+              <div class="icon-btn" @click="showDownloadModal = true">
+                <el-icon><Download /></el-icon>
+              </div>
             </el-tooltip>
           </div>
         </div>
@@ -32,8 +63,8 @@ import { ChatDotRound, Notebook, VideoPlay, Promotion } from '@element-plus/icon
           <div class="link-group">
             <h4>产品介绍</h4>
             <router-link to="/product">MDM Agent</router-link>
-            <router-link to="/product">分销系统</router-link>
-            <router-link to="/product">广告平台</router-link>
+            <router-link to="/product">多租户管理</router-link>
+            <router-link to="/product">分销&分润</router-link>
           </div>
           <div class="link-group">
             <h4>解决方案</h4>
@@ -51,9 +82,11 @@ import { ChatDotRound, Notebook, VideoPlay, Promotion } from '@element-plus/icon
       </div>
       
       <div class="footer-bottom">
-        <p>&copy; {{ new Date().getFullYear() }} 网腾无限科技. All rights reserved.</p>
+        <p>&copy; {{ new Date().getFullYear() }} 网腾无限. All rights reserved.</p>
       </div>
     </div>
+    
+    <AppDownloadModal v-model="showDownloadModal" />
   </footer>
 </template>
 
@@ -153,6 +186,35 @@ import { ChatDotRound, Notebook, VideoPlay, Promotion } from '@element-plus/icon
   p {
     color: $color-secondary-gray;
     font-size: 0.75rem;
+  }
+}
+
+.qr-code-box {
+  text-align: center;
+  padding: 8px;
+  
+  img {
+    width: 120px;
+    height: 120px;
+    margin-bottom: 8px;
+    display: block;
+  }
+  
+  p {
+    font-size: 0.875rem;
+    color: $color-secondary-gray;
+    margin: 0;
+  }
+}
+
+.show-on-mobile-flex {
+  display: none !important;
+  
+  @media (max-width: 768px) {
+    display: flex !important;
+    background-color: $color-brand-blue !important;
+    color: white !important;
+    border-color: $color-brand-blue !important;
   }
 }
 </style>

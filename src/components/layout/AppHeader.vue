@@ -2,7 +2,7 @@
   <header class="app-header" :class="{ 'is-scrolled': isScrolled }">
     <div class="container header-inner">
       <router-link to="/" class="logo">
-        <img src="/logo.svg" alt="网腾无限" class="logo-icon" />
+        <img src="/logo-symbol.svg" alt="网腾无限" class="logo-icon" />
         <span class="logo-text">网腾无限</span>
       </router-link>
 
@@ -15,7 +15,7 @@
       </nav>
 
       <div class="header-actions">
-        <button class="btn btn-outline btn-sm" @click="showDownloadModal = true">APP 下载</button>
+        <button class="btn btn-outline btn-sm hide-on-mobile" @click="showDownloadModal = true">APP 下载</button>
         <router-link to="/contact" class="btn btn-primary btn-sm">立即咨询</router-link>
         <button class="mobile-menu-toggle" :class="{ 'is-active': isMobileMenuOpen }" @click="toggleMobileMenu">
           <span class="icon-bar"></span>
@@ -115,6 +115,10 @@ onUnmounted(() => {
 
   @media (prefers-color-scheme: dark) {
     color: white;
+    
+    .logo-icon {
+      filter: brightness(0) invert(1);
+    }
   }
 }
 
@@ -186,6 +190,12 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: $spacing-md;
+
+  .hide-on-mobile {
+    @media (max-width: 768px) {
+      display: none;
+    }
+  }
 }
 
 .mobile-menu-toggle {
@@ -205,8 +215,11 @@ onUnmounted(() => {
     height: 2px;
     background-color: $color-primary-black;
 
+    // Force white in dark mode with higher specificity/!important if needed, 
+    // but usually media query inside selector works. 
+    // Let's ensure it applies by checking the parent context
     @media (prefers-color-scheme: dark) {
-      background-color: white;
+      background-color: #ffffff !important;
     }
     
     transition: all 0.3s ease;
