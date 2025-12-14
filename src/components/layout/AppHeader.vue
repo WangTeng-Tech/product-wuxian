@@ -17,7 +17,7 @@
       <div class="header-actions">
         <button class="btn btn-outline btn-sm" @click="showDownloadModal = true">APP 下载</button>
         <router-link to="/contact" class="btn btn-primary btn-sm">立即咨询</router-link>
-        <button class="mobile-menu-toggle" @click="toggleMobileMenu">
+        <button class="mobile-menu-toggle" :class="{ 'is-active': isMobileMenuOpen }" @click="toggleMobileMenu">
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
@@ -75,6 +75,15 @@ onUnmounted(() => {
     background-color: rgba(255, 255, 255, 0.98);
     border-bottom-color: $color-border;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+
+    @media (prefers-color-scheme: dark) {
+      background-color: rgba(15, 23, 42, 0.95);
+      border-bottom-color: rgba(255, 255, 255, 0.1);
+    }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    background-color: rgba(15, 23, 42, 0.9);
   }
 }
 
@@ -102,6 +111,10 @@ onUnmounted(() => {
   
   .logo-text {
     display: block;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    color: white;
   }
 }
 
@@ -135,6 +148,10 @@ onUnmounted(() => {
   font-weight: 500;
   color: $color-secondary-gray;
   position: relative;
+
+  @media (prefers-color-scheme: dark) {
+    color: rgba(255, 255, 255, 0.7);
+  }
   padding-bottom: 4px;
 
   &::after {
@@ -187,6 +204,26 @@ onUnmounted(() => {
     width: 24px;
     height: 2px;
     background-color: $color-primary-black;
+
+    @media (prefers-color-scheme: dark) {
+      background-color: white;
+    }
+    
+    transition: all 0.3s ease;
+  }
+
+  &.is-active {
+    .icon-bar:nth-child(1) {
+      transform: translateY(6px) rotate(45deg);
+    }
+    
+    .icon-bar:nth-child(2) {
+      opacity: 0;
+    }
+    
+    .icon-bar:nth-child(3) {
+      transform: translateY(-6px) rotate(-45deg);
+    }
   }
 }
 </style>

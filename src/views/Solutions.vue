@@ -16,7 +16,7 @@
         <div class="solution-block" id="elderly-care" data-aos="fade-up">
           <div class="content">
             <span class="tag">智慧养老</span>
-            <h2>社区居家养老服务落地与监管</h2>
+            <h2>社区养老服务与监管</h2>
             <p>响应人社部养老政策，利用 PMS 系统解决社区上门看护“执行难、监管难”的痛点。通过物联网设备记录服务时长与质量，确保政策红利真正惠及老人。</p>
             <ul class="features">
               <li><el-icon><Check /></el-icon> 政策落地执行方案</li>
@@ -56,7 +56,7 @@
         <div class="solution-block" id="blockchain" data-aos="fade-up">
           <div class="content">
             <span class="tag">区块链 & AI 基建</span>
-            <h2>分布式算力资产管理与收益</h2>
+            <h2>分布式算力资产与收益管理</h2>
             <p>打造去中心化算力网络，支持用户将闲置的 GPU/ASIC 算力设备接入平台。通过智能合约自动分配计算任务，实现算力贡献的透明化收益结算。</p>
             <ul class="features">
               <li><el-icon><Check /></el-icon> 算力设备加盟平台</li>

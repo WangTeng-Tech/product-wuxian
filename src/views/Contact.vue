@@ -30,9 +30,9 @@
           <div class="info-block">
             <h3>联系邮箱</h3>
             <ul class="email-list">
-              <li><span>技术支持:</span> support@wangteng.tech</li>
-              <li><span>商务合作:</span> contact@wangteng.tech</li>
-              <li><span>媒体联络:</span> press@wangteng.tech</li>
+              <li><span>技术支持:</span> support@wuxian.xyz</li>
+              <li><span>商务合作:</span> contact@wuxian.xyz</li>
+              <li><span>媒体联络:</span> press@wuxian.xyz</li>
             </ul>
           </div>
 

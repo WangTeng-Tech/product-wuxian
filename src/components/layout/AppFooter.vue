@@ -74,6 +74,7 @@ import { ChatDotRound, Notebook, VideoPlay, Promotion } from '@element-plus/icon
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
     gap: $spacing-lg;
+    padding-left: 15px;
   }
 }
 

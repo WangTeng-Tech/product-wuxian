@@ -59,7 +59,7 @@
       <div class="container">
         <div class="section-title" data-aos="fade-up">
           <h2>全球客户信赖之选</h2>
-          <p>服务遍布全球的中小企业与大型集团</p>
+          <p>合作伙伴遍布全球</p>
         </div>
         
         <div class="customers-content">
@@ -122,19 +122,19 @@
         <div class="stats-grid">
           <div class="stat-item" data-aos="fade-up">
             <div class="number">100+</div>
-            <div class="label">服务企业客户</div>
+            <div class="label">行业客户</div>
           </div>
           <div class="stat-item" data-aos="fade-up" data-aos-delay="100">
-            <div class="number">100K+</div>
-            <div class="label">在线设备连接</div>
+            <div class="number">500K+</div>
+            <div class="label">在线设备</div>
           </div>
           <div class="stat-item" data-aos="fade-up" data-aos-delay="200">
-            <div class="number">10+</div>
-            <div class="label">覆盖行业场景</div>
+            <div class="number">30+</div>
+            <div class="label">覆盖行业</div>
           </div>
           <div class="stat-item" data-aos="fade-up" data-aos-delay="300">
             <div class="number">99.999%</div>
-            <div class="label">平台可用性</div>
+            <div class="label">系统可用性</div>
           </div>
         </div>
       </div>
