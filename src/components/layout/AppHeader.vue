@@ -207,6 +207,19 @@ onUnmounted(() => {
       display: none;
     }
   }
+
+  .btn-outline {
+    @media (prefers-color-scheme: dark) {
+      color: rgba(255, 255, 255, 0.9) !important;
+      border-color: rgba(255, 255, 255, 0.3) !important;
+
+      &:hover {
+        border-color: #ffffff !important;
+        color: #ffffff !important;
+        background-color: rgba(255, 255, 255, 0.05);
+      }
+    }
+  }
 }
 
 .mobile-menu-toggle {
