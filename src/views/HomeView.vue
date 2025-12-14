@@ -64,7 +64,7 @@
         
         <div class="customers-content">
           <div class="map-background">
-            <img src="/world.png" alt="World Map" class="world-map" />
+            <img src="/world.svg" alt="World Map" class="world-map" />
           </div>
           
           <div class="logos-grid" data-aos="fade-up" data-aos-delay="200">
