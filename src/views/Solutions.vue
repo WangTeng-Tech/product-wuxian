@@ -52,12 +52,12 @@
           </div>
         </div>
 
-        <!-- 3. Blockchain / AI Infrastructure -->
+        <!-- 3. Distributed Infrastructure -->
         <div class="solution-block" id="blockchain" data-aos="fade-up">
           <div class="content">
-            <span class="tag">区块链 & AI 基建</span>
+            <span class="tag">分布式 & AI 基建</span>
             <h2>分布式算力资产与收益管理</h2>
-            <p>打造去中心化算力网络，支持用户将闲置的 GPU/ASIC 算力设备接入平台。通过智能合约自动分配计算任务，实现算力贡献的透明化收益结算。</p>
+            <p>打造分布式算力网络，支持用户将闲置的 GPU/ASIC 算力设备接入平台。通过智能插件自动分配计算任务，实现算力贡献的透明化收益结算。</p>
             <ul class="features">
               <li><el-icon><Check /></el-icon> 算力设备加盟平台</li>
               <li><el-icon><Check /></el-icon> 每日收益自动结算</li>
@@ -72,16 +72,16 @@
           </div>
         </div>
 
-        <!-- 4. Finance RWA -->
+        <!-- 4. Digital Assets -->
         <div class="solution-block reverse" id="finance" data-aos="fade-up">
           <div class="content">
-            <span class="tag">金融科技</span>
-            <h2>全域 RWA 资产评估赋能</h2>
-            <p>为现实世界资产 (RWA) 提供数字化评估模型。通过物联网数据实时监控资产状态（如车辆、设备、仓储），为金融机构提供精准的信贷风控依据。</p>
+            <span class="tag">数字化方案</span>
+            <h2>全域资源资产评估赋能</h2>
+            <p>为现实世界资产提供数字化评估模型。通过物联网数据实时监控资产状态（如车辆、设备、仓储），为合作机构提供精准的风控依据。</p>
             <ul class="features">
               <li><el-icon><Check /></el-icon> 动产状态实时追踪</li>
               <li><el-icon><Check /></el-icon> 资产价值动态评估</li>
-              <li><el-icon><Check /></el-icon> 金融级数据风控</li>
+              <li><el-icon><Check /></el-icon> 企业级数据合规</li>
             </ul>
           </div>
           <div class="image-placeholder">

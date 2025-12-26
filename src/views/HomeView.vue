@@ -48,7 +48,7 @@
               <el-icon><Connection /></el-icon>
             </div>
             <h3>多行业赋能</h3>
-            <p>深度适配新质生产力、国防军工、航空航天、乡村振兴、区块链、金融等行业场景，提供定制化解决方案。</p>
+            <p>深度适配新质生产力、国防军工、航空航天、乡村振兴、分布式技术、数字化办公等行业场景，提供定制化解决方案。</p>
           </div>
         </div>
       </div>
@@ -107,8 +107,8 @@
           
           <router-link to="/solutions" class="solution-card" data-aos="fade-up" data-aos-delay="300">
             <div class="card-content">
-              <h3>金融科技</h3>
-              <p>结合区块链技术，保障分销数据透明不可篡改。</p>
+              <h3>智慧数字化</h3>
+              <p>结合分布式加密技术，保障分销数据透明可追溯。</p>
               <span class="link-text">了解更多 &rarr;</span>
             </div>
           </router-link>

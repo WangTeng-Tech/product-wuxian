@@ -10,7 +10,7 @@
         <router-link to="/" class="nav-link" @click="closeMobileMenu">首页</router-link>
         <router-link to="/product" class="nav-link" @click="closeMobileMenu">产品介绍</router-link>
         <router-link to="/solutions" class="nav-link" @click="closeMobileMenu">解决方案</router-link>
-        <router-link to="/support" class="nav-link" @click="closeMobileMenu">支持中心</router-link>
+        <router-link to="/partners" class="nav-link" @click="closeMobileMenu">伙伴计划</router-link>
         <router-link to="/contact" class="nav-link" @click="closeMobileMenu">联系我们</router-link>
       </nav>
 

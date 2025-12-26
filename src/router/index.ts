@@ -59,6 +59,18 @@ const router = createRouter({
       meta: { title: '管理后台 - 网腾无限' }
     },
     {
+      path: '/privacy',
+      name: 'privacy',
+      component: () => import('@/views/PrivacyView.vue'),
+      meta: { title: '隐私政策 - 网腾无限' }
+    },
+    {
+      path: '/terms',
+      name: 'terms',
+      component: () => import('@/views/TermsView.vue'),
+      meta: { title: '使用条款 - 网腾无限' }
+    },
+    {
       path: '/:pathMatch(.*)*',
       redirect: '/'
     }

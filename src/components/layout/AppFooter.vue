@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { ChatDotRound, Notebook, VideoPlay, Promotion, Download } from '@element-plus/icons-vue'
+import { ChatDotRound, VideoPlay, Promotion, Download } from '@element-plus/icons-vue'
 import AppDownloadModal from '@/components/common/AppDownloadModal.vue'
 
 const showDownloadModal = ref(false)
@@ -17,40 +17,34 @@ const showDownloadModal = ref(false)
             无限科技、无限收益。
           </p>
           <div class="social-icons">
+            <!-- WeChat -->
             <el-popover placement="top" :width="150" trigger="hover">
               <template #reference>
                 <div class="icon-btn"><el-icon><ChatDotRound /></el-icon></div>
               </template>
               <div class="qr-code-box">
                 <img src="/weixin.png" alt="微信" />
-                <p>微信联系</p>
+                <p>客服微信</p>
               </div>
             </el-popover>
 
-            <el-popover placement="top" :width="150" trigger="hover">
-              <template #reference>
-                <div class="icon-btn"><el-icon><Notebook /></el-icon></div>
-              </template>
-              <div class="qr-code-box">
-                <img src="/zhihu.png" alt="知乎" />
-                <p>知乎专栏</p>
-              </div>
-            </el-popover>
-
-            <el-tooltip content="抖音:wuxian.xyz" placement="top">
+            <!-- YouTube -->
+            <el-tooltip content="YouTube:wuxian.xyz" placement="top">
               <div class="icon-btn"><el-icon><VideoPlay /></el-icon></div>
             </el-tooltip>
-            
+
+            <!-- DingTalk -->
             <el-popover placement="top" :width="150" trigger="hover">
               <template #reference>
                 <div class="icon-btn"><el-icon><Promotion /></el-icon></div>
               </template>
               <div class="qr-code-box">
-                <img src="/dingtalk.png" alt="钉钉联系" />
-                <p>钉钉联系</p>
+                <img src="/dingtalk.png" alt="官方钉钉" />
+                <p>官方钉钉</p>
               </div>
             </el-popover>
 
+            <!-- APP Download -->
             <el-tooltip content="APP下载" placement="top">
               <div class="icon-btn" @click="showDownloadModal = true">
                 <el-icon><Download /></el-icon>
@@ -70,13 +64,13 @@ const showDownloadModal = ref(false)
             <h4>解决方案</h4>
             <router-link to="/solutions">航天国防</router-link>
             <router-link to="/solutions">教育医疗</router-link>
-            <router-link to="/solutions">金融科技</router-link>
+            <router-link to="/solutions">数字化方案</router-link>
           </div>
           <div class="link-group">
             <h4>关于我们</h4>
-            <router-link to="/join">加入我们</router-link>
-            <router-link to="/partners">合作伙伴</router-link>
-            <router-link to="/contact">联系我们</router-link>
+            <router-link to="/join">招贤纳士</router-link>
+            <router-link to="/privacy">隐私政策</router-link>
+            <router-link to="/terms">使用条款</router-link>
           </div>
         </div>
       </div>
