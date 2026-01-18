@@ -108,6 +108,12 @@
             </a>
           </div>
         </div>
+
+        <!-- Security Notice -->
+        <div class="security-notice">
+          <el-icon><CircleCheckFilled /></el-icon>
+          <span>所有安装包均通过 360/火绒/腾讯管家 安全扫描，可放心安装。</span>
+        </div>
       </div>
     </div>
   </el-dialog>
@@ -115,7 +121,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Platform, Monitor, Cpu, Iphone } from '@element-plus/icons-vue'
+import { Platform, Monitor, Cpu, Iphone, CircleCheckFilled } from '@element-plus/icons-vue'
 
 const props = defineProps<{
   modelValue: boolean
@@ -272,6 +278,24 @@ const visible = computed({
   
   a {
     text-decoration: none;
+  }
+}
+
+.security-notice {
+  margin-top: 24px;
+  padding: 12px;
+  background: rgba(#67C23A, 0.05);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #67C23A;
+  font-size: 0.85rem;
+  line-height: 1.4;
+
+  .el-icon {
+    font-size: 1.1rem;
+    flex-shrink: 0;
   }
 }
 </style>

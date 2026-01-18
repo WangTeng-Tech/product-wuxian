@@ -117,6 +117,9 @@
                 <el-button type="primary" class="submit-btn" @click="submitForm(formRef)">
                   提交咨询
                 </el-button>
+                <div class="form-privacy-tip">
+                  提交即代表您同意我们的 <router-link to="/privacy">隐私政策</router-link>
+                </div>
               </el-form-item>
             </el-form>
           </div>
@@ -318,6 +321,17 @@ const submitForm = async (formEl: FormInstance | undefined) => {
   p {
     font-size: 0.875rem;
     color: $color-secondary-gray;
+  }
+.form-privacy-tip {
+  margin-top: 12px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: $color-secondary-gray;
+
+  a {
+    color: $color-brand-blue;
+    text-decoration: none;
+    &:hover { text-decoration: underline; }
   }
 }
 </style>

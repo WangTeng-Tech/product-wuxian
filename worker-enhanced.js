@@ -88,6 +88,36 @@ const GEO_ROUTING = {
 
 // === 工具函数 ===
 
+// 强制 HTTPS 重定向
+function forceHttps(request) {
+    const url = new URL(request.url);
+    if (url.protocol === 'http:') {
+        url.protocol = 'https:';
+        return new Response(null, {
+            status: 301,
+            headers: { 'Location': url.toString() }
+        });
+    }
+    return null;
+}
+
+// 注入安全响应头
+function addSecurityHeaders(headers) {
+    const newHeaders = new Headers(headers);
+    // HSTS (1 year)
+    newHeaders.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+    // 防止被嵌入 iframe (避免点击劫持)
+    newHeaders.set('X-Frame-Options', 'SAMEORIGIN');
+    // 防止 MIME 类型嗅探
+    newHeaders.set('X-Content-Type-Options', 'nosniff');
+    // 跨域策略
+    newHeaders.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+    // 内容安全策略 (基础版，允许本站和常用公共资源)
+    newHeaders.set('Content-Security-Policy', "default-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.wuxian.xyz; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://*.wuxian.xyz;");
+    
+    return newHeaders;
+}
+
 // 移除条件请求头 (强制后端返回 200,确保能获取内容进行缓存)
 function removeConditionalHeaders(headers) {
     const newHeaders = new Headers(headers);
@@ -100,12 +130,16 @@ function removeConditionalHeaders(headers) {
 
 // 清理响应头 (避免 Content-Encoding 问题导致白屏)
 function cleanHeaders(headers) {
-    const newHeaders = new Headers(headers);
+    let newHeaders = new Headers(headers);
     newHeaders.delete('content-encoding');
     newHeaders.delete('content-length');
     newHeaders.delete('transfer-encoding');
     newHeaders.delete('connection');
     newHeaders.delete('keep-alive');
+    
+    // 统一注入安全头 (在此处注入，确保无论是缓存还是回源都能带上)
+    newHeaders = addSecurityHeaders(newHeaders);
+    
     return newHeaders;
 }
 
@@ -142,7 +176,8 @@ async function raceBackends(request) {
         })));
 
         // 添加响应头标识后端
-        const response = new Response(winner.res.body, winner.res);
+        const headers = cleanHeaders(winner.res.headers);
+        const response = new Response(winner.res.body, { ...winner.res, headers });
         response.headers.set('X-Backend-Used', winner.backend.name);
         response.headers.set('X-Backend-Latency', winner.latency + 'ms');
         return response;
@@ -319,7 +354,11 @@ async function handleWithCache(request) {
 export default {
     async fetch(request, env, ctx) {
         try {
-            // 健康检查端点
+            // 1. 强制 HTTPS 重定向
+            const httpsRedirect = forceHttps(request);
+            if (httpsRedirect) return httpsRedirect;
+
+            // 2. 健康检查端点
             const url = new URL(request.url);
             if (url.pathname === '/_health') {
                 return new Response(JSON.stringify({
@@ -327,16 +366,16 @@ export default {
                     backends: BACKENDS.map(b => b.name),
                     timestamp: new Date().toISOString()
                 }), {
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: addSecurityHeaders({ 'Content-Type': 'application/json' })
                 });
             }
 
-            // 智能竞速策略 (已禁用)
+            // 3. 智能竞速策略 (已禁用)
             if (USE_RACE) {
                 return await handleWithCache(request);
             }
 
-            // 统一入口
+            // 4. 统一入口 (带缓存)
             return await handleWithCache(request);
 
         } catch (e) {
@@ -346,7 +385,7 @@ export default {
                 timestamp: new Date().toISOString()
             }), {
                 status: 500,
-                headers: { 'Content-Type': 'application/json' }
+                headers: addSecurityHeaders({ 'Content-Type': 'application/json' })
             });
         }
     }
