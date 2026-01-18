@@ -67,6 +67,14 @@
 - **Cloudflare Worker**: 智能负载均衡 (`worker-enhanced.js`)，支持地理位置路由和故障转移。
 - **多云部署支持**: Vercel, Netlify, Render, 腾讯云。
 
+### 8. Supabase 保活机制 (Keep-Alive) 🆕
+针对 Supabase 免费版在长期无活动（通常为 7 天）后会自动关停（Pause）的问题，本项目设计了一套 **“全自动心跳保活” (Keep-Alive)** 策略，确保你的数据库始终处于活跃状态。
+
+- **核心逻辑**: 每周二、五定期触发 GitHub Action，运行脚本对数据库进行一次简单的查询操作。
+- **自动化脚本**: [scripts/supabase-keep-alive.mjs](./scripts/supabase-keep-alive.mjs)
+- **GitHub Action**: [.github/workflows/supabase-keep-alive.yml](./.github/workflows/supabase-keep-alive.yml)
+- **配置要求**: 需要在 GitHub Repo Settings -> Secrets 中配置 `PUBLIC_SUPABASE_URL` 和 `PUBLIC_SUPABASE_ANON_KEY`。
+
 ## 🛠️ 技术栈详情
 
 - **核心框架**: Vue 3 (Composition API)
