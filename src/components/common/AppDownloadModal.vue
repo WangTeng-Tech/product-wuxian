@@ -3,6 +3,7 @@ import { ref, reactive, computed } from 'vue'
 import { Platform, Monitor, Cpu, Iphone, CircleCheckFilled, User, Lock } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
+import type { FormRules } from 'element-plus'
 
 const props = defineProps<{
   modelValue: boolean
@@ -22,7 +23,7 @@ const authForm = reactive({
   email: '',
   password: ''
 })
-const authRules = reactive({
+const authRules = reactive<FormRules>({
   email: [
     { required: true, message: 'Please input email', trigger: 'blur' },
     { type: 'email', message: 'Please input correct email address', trigger: 'blur' }

@@ -322,6 +322,8 @@ const submitForm = async (formEl: FormInstance | undefined) => {
     font-size: 0.875rem;
     color: $color-secondary-gray;
   }
+}
+
 .form-privacy-tip {
   margin-top: 12px;
   text-align: center;
