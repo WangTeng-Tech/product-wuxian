@@ -1,13 +1,76 @@
+<script setup lang="ts">
+import { ref, reactive, computed } from 'vue'
+import { Platform, Monitor, Cpu, Iphone, CircleCheckFilled, User, Lock } from '@element-plus/icons-vue'
+import { useUserStore } from '@/stores/user'
+import { ElMessage } from 'element-plus'
+
+const props = defineProps<{
+  modelValue: boolean
+}>()
+
+const emit = defineEmits(['update:modelValue'])
+
+const userStore = useUserStore()
+const visible = computed({
+  get: () => props.modelValue,
+  set: (val) => emit('update:modelValue', val)
+})
+
+// === Auth Logic ===
+const isLoginMode = ref(true)
+const authForm = reactive({
+  email: '',
+  password: ''
+})
+const authRules = reactive({
+  email: [
+    { required: true, message: 'Please input email', trigger: 'blur' },
+    { type: 'email', message: 'Please input correct email address', trigger: 'blur' }
+  ],
+  password: [
+    { required: true, message: 'Please input password', trigger: 'blur' },
+    { min: 6, message: 'Password must be at least 6 characters', trigger: 'blur' }
+  ]
+})
+const authFormRef = ref()
+
+const handleAuth = async () => {
+  if (!authFormRef.value) return
+  
+  await authFormRef.value.validate(async (valid: boolean) => {
+    if (valid) {
+      try {
+        if (isLoginMode.value) {
+          await userStore.signIn(authForm.email, authForm.password)
+          ElMessage.success('Login successfully')
+        } else {
+          await userStore.signUp(authForm.email, authForm.password)
+          ElMessage.success('Registration successful! Please check your email to confirm.')
+          // Switch to login or stay? Valid user might be returned if auto-confirm is on, otherwise wait.
+          // For simple UX, let's assume they can login or utilize the session if Supabase allows.
+          // If confirm is required, they can't login yet.
+          // Let's assume standard Supabase behavior (often requires email confirm for production).
+          // But for "User Convenience", maybe just tell them.
+        }
+      } catch (e: any) {
+        ElMessage.error(e.message || 'Authentication failed')
+      }
+    }
+  })
+}
+</script>
+
 <template>
   <el-dialog
     v-model="visible"
-    title="下载中心"
+    :title="userStore.user ? '下载中心' : '访问验证'"
     width="700px"
     align-center
     class="app-download-modal"
     :append-to-body="true"
   >
-    <div class="download-layout">
+    <!-- Logged In: Show Downloads -->
+    <div v-if="userStore.user" class="download-layout">
       <!-- Left: Partner Wallet -->
       <div class="download-section partner-section">
         <div class="section-header">
@@ -25,6 +88,9 @@
           <a href="https://dl.wuxian.xyz/app/wtwx-wallet.apk" target="_blank" download>
             <el-button type="primary" round class="download-btn">立即下载</el-button>
           </a>
+          <div class="user-info-check">
+            <el-tag size="small" type="success">已验证: {{ userStore.user.email }}</el-tag>
+          </div>
         </div>
       </div>
 
@@ -116,28 +182,68 @@
         </div>
       </div>
     </div>
+
+    <!-- Not Logged In: Show Auth Form -->
+    <div v-else class="auth-container">
+      <div class="auth-header">
+        <h3 class="auth-title">{{ isLoginMode ? '登录下载中心' : '注册新账户' }}</h3>
+        <p class="auth-subtitle">为了保障软件分发安全，请先登录账户以获取下载权限。</p>
+      </div>
+
+      <el-form 
+        ref="authFormRef"
+        :model="authForm"
+        :rules="authRules"
+        label-position="top"
+        class="auth-form"
+        @keyup.enter="handleAuth"
+      >
+        <el-form-item label="电子邮箱" prop="email">
+          <el-input 
+            v-model="authForm.email" 
+            placeholder="请输入您的邮箱"
+            :prefix-icon="User"
+          />
+        </el-form-item>
+        
+        <el-form-item label="登录密码" prop="password">
+          <el-input 
+            v-model="authForm.password" 
+            type="password"
+            placeholder="请输入密码 (至少 6 位)"
+            :prefix-icon="Lock"
+            show-password
+          />
+        </el-form-item>
+
+        <el-button 
+          type="primary" 
+          class="auth-submit-btn" 
+          @click="handleAuth" 
+          :loading="userStore.loading"
+        >
+          {{ isLoginMode ? '立即登录' : '注册账户' }}
+        </el-button>
+      </el-form>
+
+      <div class="auth-switch">
+        <span>{{ isLoginMode ? '还没有账户？' : '已有账户？' }}</span>
+        <el-link type="primary" @click="isLoginMode = !isLoginMode">
+          {{ isLoginMode ? '免费注册' : '直接登录' }}
+        </el-link>
+      </div>
+
+      <div class="auth-notice">
+        <p>登录即代表您同意 <router-link to="/terms">服务条款</router-link> 和 <router-link to="/privacy">隐私政策</router-link></p>
+      </div>
+    </div>
   </el-dialog>
 </template>
-
-<script setup lang="ts">
-import { computed } from 'vue'
-import { Platform, Monitor, Cpu, Iphone, CircleCheckFilled } from '@element-plus/icons-vue'
-
-const props = defineProps<{
-  modelValue: boolean
-}>()
-
-const emit = defineEmits(['update:modelValue'])
-
-const visible = computed({
-  get: () => props.modelValue,
-  set: (val) => emit('update:modelValue', val)
-})
-</script>
 
 <style lang="scss" scoped>
 @use 'sass:color';
 
+/* === Existing Styles === */
 .download-layout {
   display: flex;
   gap: 30px;
@@ -206,6 +312,10 @@ const visible = computed({
 
   .download-btn {
     width: 100%;
+  }
+
+  .user-info-check {
+    margin-top: 12px;
   }
   
   a {
@@ -296,6 +406,63 @@ const visible = computed({
   .el-icon {
     font-size: 1.1rem;
     flex-shrink: 0;
+  }
+}
+
+/* === Auth Styles === */
+.auth-container {
+  padding: 0 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 30px;
+
+  .auth-title {
+    font-size: 1.5rem;
+    color: $color-primary-black;
+    margin-bottom: 8px;
+  }
+
+  .auth-subtitle {
+    font-size: 0.9rem;
+    color: $color-secondary-gray;
+  }
+}
+
+.auth-form {
+  width: 100%;
+  max-width: 320px;
+}
+
+.auth-submit-btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+  margin-top: 10px;
+}
+
+.auth-switch {
+  margin-top: 20px;
+  font-size: 0.9rem;
+  color: $color-secondary-gray;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.auth-notice {
+  margin-top: 30px;
+  font-size: 0.75rem;
+  color: $color-secondary-gray;
+  
+  a {
+    color: $color-secondary-gray;
+    text-decoration: underline;
+    &:hover { color: $color-brand-blue; }
   }
 }
 </style>

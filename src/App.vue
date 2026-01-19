@@ -28,15 +28,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useUserStore } from '@/stores/user'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import ChatBubble from '@/components/customer-service/ChatBubble.vue'
 import ChatWindow from '@/components/customer-service/ChatWindow.vue'
 
 const route = useRoute()
+const userStore = useUserStore()
 const isChatOpen = ref(false)
+
+onMounted(() => {
+  userStore.initialize()
+})
 
 // 简单计算未读数 (实际应由后端返回或前端计算 last_read_at)
 // 这里暂时用 0，或者如果未打开窗口且有新消息则显示
