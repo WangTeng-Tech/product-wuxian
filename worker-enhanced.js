@@ -104,16 +104,20 @@ function forceHttps(request) {
 // 注入安全响应头
 function addSecurityHeaders(headers) {
     const newHeaders = new Headers(headers);
-    // HSTS (1 year)
-    newHeaders.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+    // HSTS (1 year) - 强制 HTTPS
+    newHeaders.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
     // 防止被嵌入 iframe (避免点击劫持)
-    newHeaders.set('X-Frame-Options', 'SAMEORIGIN');
-    // 防止 MIME 类型嗅探
+    newHeaders.set('X-Frame-Options', 'DENY');
+    // 防止 MIME 类型嗅探 (用户特别要求的修复)
     newHeaders.set('X-Content-Type-Options', 'nosniff');
     // 跨域策略
     newHeaders.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-    // 内容安全策略 (基础版，允许本站和常用公共资源)
-    newHeaders.set('Content-Security-Policy', "default-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.wuxian.xyz; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://*.wuxian.xyz;");
+    // XSS 保护
+    newHeaders.set('X-XSS-Protection', '1; mode=block');
+    // 权限策略
+    newHeaders.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    // 内容安全策略 (均衡安全性与功能性)
+    newHeaders.set('Content-Security-Policy', "default-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.wuxian.xyz https://*.supabase.co; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://*.wuxian.xyz; frame-ancestors 'none';");
     
     return newHeaders;
 }
@@ -128,16 +132,28 @@ function removeConditionalHeaders(headers) {
     return newHeaders;
 }
 
-// 清理响应头 (避免 Content-Encoding 问题导致白屏)
+// 清理响应头 (避免 Content-Encoding 问题导致白屏，并移除后端指纹)
 function cleanHeaders(headers) {
     let newHeaders = new Headers(headers);
+    
+    // 1. 移除可能导致解码问题的头
     newHeaders.delete('content-encoding');
     newHeaders.delete('content-length');
     newHeaders.delete('transfer-encoding');
     newHeaders.delete('connection');
     newHeaders.delete('keep-alive');
     
-    // 统一注入安全头 (在此处注入，确保无论是缓存还是回源都能带上)
+    // 2. 移除后端泄露信息 (Vercel/Netlify/Render 指纹)
+    newHeaders.delete('x-vercel-id');
+    newHeaders.delete('x-vercel-cache');
+    newHeaders.delete('x-vercel-execution-region');
+    newHeaders.delete('x-nf-request-id');
+    newHeaders.delete('x-render-origin-server');
+    newHeaders.delete('x-powered-by');
+    newHeaders.delete('via');
+    newHeaders.delete('server'); // 由 Cloudflare 重新设置或移除
+    
+    // 3. 统一注入安全头
     newHeaders = addSecurityHeaders(newHeaders);
     
     return newHeaders;
