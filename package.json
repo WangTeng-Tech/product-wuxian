@@ -8,7 +8,6 @@
     "build": "vue-tsc && vite build",
     "build:worker": "echo 'Worker only, skipping static build'",
     "preview": "vite preview",
-    "supabase-keep-alive": "node scripts/supabase-keep-alive.mjs",
     "deploy": "cross-env WRANGLER_SEND_METRICS=false wrangler deploy"
   },
   "dependencies": {
