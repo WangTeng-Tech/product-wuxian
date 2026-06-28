@@ -189,6 +189,7 @@ const handleAuth = async () => {
       <div class="auth-header">
         <h3 class="auth-title">{{ isLoginMode ? '登录下载中心' : '注册新账户' }}</h3>
         <p class="auth-subtitle">为了保障软件分发安全，请先登录账户以获取下载权限。</p>
+        <p class="auth-client-desc" style="font-size: 0.85rem; color: #409eff; margin-top: 8px; font-weight: 500;">支持 Windows, macOS, Android, iOS 全平台客户端</p>
       </div>
 
       <el-form 

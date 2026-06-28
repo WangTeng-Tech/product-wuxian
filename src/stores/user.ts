@@ -1,63 +1,48 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { supabase } from '@/utils/supabase'
-import type { User, Session, AuthChangeEvent } from '@supabase/supabase-js'
+import { authApi } from '@/utils/api'
+import type { User, Session } from '@/utils/api'
 
 export const useUserStore = defineStore('user', () => {
     const user = ref<User | null>(null)
     const session = ref<Session | null>(null)
     const loading = ref(false)
 
-    // 初始化：检查当且会话
+    // 初始化：从后端获取当前的会话状态
     const initialize = async () => {
-        if (!supabase) return
-
-        // 获取当前会话
-        const { data } = await supabase.auth.getSession()
-        session.value = data.session
-        user.value = data.session?.user || null
-
-        // 监听 Auth 变化
-        supabase.auth.onAuthStateChange((_event: AuthChangeEvent, _session: Session | null) => {
-            session.value = _session
-            user.value = _session?.user || null
-        })
+        try {
+            const { data } = await authApi.getSession()
+            session.value = data.session
+            user.value = data.session?.user || null
+        } catch (err) {
+            session.value = null
+            user.value = null
+        }
     }
 
     // 登录
     const signIn = async (email: string, password: string) => {
-        if (!supabase) throw new Error('Supabase client not initialized')
         loading.value = true
         try {
-            const { error } = await supabase.auth.signInWithPassword({
-                email,
-                password
-            })
-            if (error) throw error
+            const { data, error } = await authApi.signIn(email, password)
+            if (error) throw new Error(error.error || '登录失败')
+            if (data && data.success) {
+                user.value = data.user
+                session.value = { user: data.user }
+            }
         } finally {
             loading.value = false
         }
     }
 
-    // 注册
-    const signUp = async (email: string, password: string) => {
-        if (!supabase) throw new Error('Supabase client not initialized')
-        loading.value = true
-        try {
-            const { error } = await supabase.auth.signUp({
-                email,
-                password
-            })
-            if (error) throw error
-        } finally {
-            loading.value = false
-        }
+    // 注册（由于安全性考虑，后台管理账户目前仅支持通过数据库 Seed 初始化）
+    const signUp = async (_email: string, _password: string) => {
+        throw new Error('自建后台已关闭公开注册通道，请联系系统管理员分配账号。')
     }
 
     // 登出
     const signOut = async () => {
-        if (!supabase) return
-        await supabase.auth.signOut()
+        await authApi.signOut()
         user.value = null
         session.value = null
     }

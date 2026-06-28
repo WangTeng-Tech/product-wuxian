@@ -257,10 +257,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Refresh, Download, SwitchButton } from '@element-plus/icons-vue'
-import { supabase } from '@/utils/supabase'
+import { authApi, adminApi } from '@/utils/api'
 import { useCustomerService } from '@/composables/useCustomerService'
 
 const isAuthenticated = ref(false)
@@ -284,25 +284,17 @@ const handleLogin = async () => {
     return
   }
 
-  if (!supabase) {
-    ElMessage.error('数据库连接未初始化')
-    return
-  }
-
   loading.value = true
   try {
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.value,
-      password: password.value
-    })
-
-    if (error) throw error
+    const { error } = await authApi.signIn(email.value, password.value)
+    if (error) throw new Error(error.error || '登录失败')
 
     isAuthenticated.value = true
     ElMessage.success('登录成功')
     fetchStats()
     fetchInquiries()
     fetchConversations()
+    initAdminWS()
   } catch (error: any) {
     ElMessage.error('登录失败: ' + error.message)
   } finally {
@@ -312,12 +304,14 @@ const handleLogin = async () => {
 
 // 退出
 const logout = async () => {
-  if (!supabase) return
   try {
-    await supabase.auth.signOut()
+    await authApi.signOut()
     isAuthenticated.value = false
     email.value = ''
     password.value = ''
+    if (adminSocket) {
+      adminSocket.close()
+    }
     ElMessage.success('已退出登录')
   } catch (error: any) {
     ElMessage.error('退出失败: ' + error.message)
@@ -326,47 +320,25 @@ const logout = async () => {
 
 // 获取统计数据 (独立获取，不受分页影响)
 const fetchStats = async () => {
-  if (!supabase) return
-  
-  // 获取总数
-  const { count } = await supabase.from('inquiries').select('*', { count: 'exact', head: true })
-  total.value = count || 0
-
-  // 获取今日新增
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const { count: todayC } = await supabase
-    .from('inquiries')
-    .select('*', { count: 'exact', head: true })
-    .gte('created_at', today.toISOString())
-  todayCount.value = todayC || 0
-
-  // 获取本周新增
-  const weekAgo = new Date()
-  weekAgo.setDate(weekAgo.getDate() - 7)
-  const { count: weekC } = await supabase
-    .from('inquiries')
-    .select('*', { count: 'exact', head: true })
-    .gte('created_at', weekAgo.toISOString())
-  weekCount.value = weekC || 0
+  try {
+    const data = await adminApi.getStats()
+    total.value = data.totalCount
+    todayCount.value = data.todayCount
+    weekCount.value = data.weekCount
+  } catch (error: any) {
+    console.error('Error fetching stats:', error)
+  }
 }
 
 const fetchInquiries = async () => {
   loading.value = true
   try {
-    if (!supabase) return
+    const allData = await adminApi.getInquiries()
+    total.value = allData.length
     
+    // 前端分页处理
     const from = (currentPage.value - 1) * pageSize.value
-    const to = from + pageSize.value - 1
-
-    const { data, error } = await supabase
-      .from('inquiries')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .range(from, to)
-
-    if (error) throw error
-    inquiries.value = data || []
+    inquiries.value = allData.slice(from, from + pageSize.value)
   } catch (error: any) {
     ElMessage.error('获取咨询失败: ' + error.message)
   } finally {
@@ -391,23 +363,27 @@ const refreshData = () => {
 }
 
 const exportToCSV = async () => {
-  // 导出时获取所有数据
-  if (!supabase) return
-  const { data } = await supabase.from('inquiries').select('*').order('created_at', { ascending: false })
-  
-  if (!data) return
+  try {
+    const data = await adminApi.getInquiries()
+    if (!data || data.length === 0) {
+      ElMessage.warning('没有可导出的数据')
+      return
+    }
 
-  const headers = ['姓名', '公司', '手机号', '邮箱', '咨询类型', '详细需求', '提交时间']
-  const rows = data.map(item => [
-    item.name, item.company, item.mobile, item.email || '',
-    getTypeLabel(item.type), item.message, formatDate(item.created_at)
-  ])
-  const csv = [headers.join(','), ...rows.map(row => row.map(cell => `"${cell}"`).join(','))].join('\n')
-  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' })
-  const link = document.createElement('a')
-  link.href = URL.createObjectURL(blob)
-  link.download = `inquiries_${new Date().toISOString().slice(0, 10)}.csv`
-  link.click()
+    const headers = ['姓名', '公司', '手机号', '邮箱', '咨询类型', '详细需求', '提交时间']
+    const rows = data.map(item => [
+      item.name, item.company, item.mobile, item.email || '',
+      getTypeLabel(item.inquiry_type), item.message, formatDate(item.created_at)
+    ])
+    const csv = [headers.join(','), ...rows.map(row => row.map(cell => `"${cell}"`).join(','))].join('\n')
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `inquiries_${new Date().toISOString().slice(0, 10)}.csv`
+    link.click()
+  } catch (err: any) {
+    ElMessage.error('导出失败')
+  }
 }
 
 const copyContact = (row: any) => {
@@ -436,26 +412,10 @@ const {
 
 // 获取会话列表
 const fetchConversations = async () => {
-  if (!supabase) return
   try {
-    // 获取总数
-    const { count } = await supabase
-      .from('customer_conversations')
-      .select('*', { count: 'exact', head: true })
-    convTotal.value = count || 0
-
-    // 获取分页数据
-    const from = (convPage.value - 1) * convPageSize.value
-    const to = from + convPageSize.value - 1
-
-    const { data, error } = await supabase
-      .from('customer_conversations')
-      .select('*')
-      .order('last_message_at', { ascending: false })
-      .range(from, to)
-    
-    if (error) throw error
-    conversations.value = data || []
+    const data = await adminApi.getConversations(convPage.value, convPageSize.value)
+    conversations.value = data.list || []
+    convTotal.value = data.total || 0
   } catch (error) {
     console.error('Error fetching conversations:', error)
     ElMessage.error('获取会话列表失败')
@@ -469,56 +429,20 @@ const handleConvPageChange = (val: number) => {
 
 // 清理空会话
 const cleanupEmptyConversations = async () => {
-  if (!supabase) return
-  
   cleanupLoading.value = true
   try {
-    // 1. 获取所有会话ID
-    const { data: allConvs, error: fetchError } = await supabase
-      .from('customer_conversations')
-      .select('id')
-    
-    if (fetchError) throw fetchError
-    if (!allConvs || allConvs.length === 0) {
-      ElMessage.info('没有会话需要清理')
-      return
-    }
-
-    // 2. 检查每个会话是否有消息
-    const emptyConvIds: number[] = []
-    for (const conv of allConvs) {
-      const { count } = await supabase
-        .from('customer_messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('conversation_id', conv.id)
+    const res = await adminApi.cleanupConversations()
+    if (res.success) {
+      ElMessage.success(`成功清理 ${res.count} 个空会话`)
       
-      if (count === 0) {
-        emptyConvIds.push(conv.id)
+      // 刷新列表
+      convPage.value = 1
+      await fetchConversations()
+      
+      // 如果当前选中的会话被删除了，清空选择
+      if (currentConversation.value && res.cleanedIds.includes(currentConversation.value.id)) {
+        currentConversation.value = null
       }
-    }
-
-    if (emptyConvIds.length === 0) {
-      ElMessage.success('没有空会话，无需清理')
-      return
-    }
-
-    // 3. 删除空会话
-    const { error: deleteError } = await supabase
-      .from('customer_conversations')
-      .delete()
-      .in('id', emptyConvIds)
-    
-    if (deleteError) throw deleteError
-
-    ElMessage.success(`成功清理 ${emptyConvIds.length} 个空会话`)
-    
-    // 4. 刷新列表
-    convPage.value = 1
-    await fetchConversations()
-    
-    // 5. 如果当前选中的会话被删除了，清空选择
-    if (currentConversation.value && emptyConvIds.includes(currentConversation.value.id)) {
-      currentConversation.value = null
     }
   } catch (error: any) {
     console.error('Error cleaning up conversations:', error)
@@ -561,27 +485,56 @@ const scrollToBottom = async () => {
 // 监听新消息滚动
 watch(() => currentMessages.value.length, scrollToBottom)
 
+// WebSocket 实时监听客服更新
+let adminSocket: WebSocket | null = null
+
+const initAdminWS = () => {
+  if (adminSocket) adminSocket.close()
+
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  const wsUrl = `${protocol}//${window.location.host}/ws`
+  adminSocket = new WebSocket(wsUrl)
+
+  adminSocket.onopen = () => {
+    adminSocket?.send(JSON.stringify({
+      type: 'register',
+      role: 'admin'
+    }))
+  }
+
+  adminSocket.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data)
+      if (data.type === 'conversation_created' || data.type === 'message') {
+        // 新会话或新消息进入，刷新会话列表
+        fetchConversations()
+      }
+    } catch (err) {
+      console.error('[Admin WS] Error parsing message:', err)
+    }
+  }
+
+  adminSocket.onerror = (err) => {
+    console.error('[Admin WS] Error:', err)
+  }
+}
+
 // 初始化
 onMounted(async () => {
-  if (!supabase) {
-    console.warn('Supabase not configured. Admin features will be limited.')
-    return
-  }
   // 检查是否已登录
-  const { data: { session } } = await supabase.auth.getSession()
-  if (session) {
+  const { data } = await authApi.getSession()
+  if (data && data.session) {
     isAuthenticated.value = true
     fetchStats()
     fetchInquiries()
     fetchConversations()
-    
-    // 订阅新会话
-    supabase
-      .channel('admin-conversations')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'customer_conversations' }, () => {
-        fetchConversations()
-      })
-      .subscribe()
+    initAdminWS()
+  }
+})
+
+onUnmounted(() => {
+  if (adminSocket) {
+    adminSocket.close()
   }
 })
 
